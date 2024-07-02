@@ -24,7 +24,7 @@ def hyphenation():
     response.headers.add("Access-Control-Allow-Origin", "*")
     return response
 
-@app.route('/hyphenation', methods=['GET'])
+@app.route('/getHyphenation', methods=['GET'])
 def hyphenation():
     text = request.args.get('text', '')
     print(text)
