@@ -87,6 +87,8 @@ def verarschen(data, arschfaktor):
                 word = word[:-1]
             if word.endswith("arschch"):
                 word = word[:-2]
+            if word.endswith("arschsch"):
+                word = word[:-3]
             if word.startswith("aus"):
                 word = word.replace("aus", "arsch")
 
