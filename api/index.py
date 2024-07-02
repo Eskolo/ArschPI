@@ -20,12 +20,12 @@ def hyphenation():
         sylable = dic.inserted(word)
         sylables.append(sylable)
 
-    # read the int from arschfragen.txt, incremnt by 1 and write it back
-    with open('./api/arschfragen.txt', 'r') as file:
-        arschfragen = int(file.read())
-        arschfragen += 1
-        with open('./api/arschfragen.txt', 'w') as file:
-            file.write(str(arschfragen))
+    # # read the int from arschfragen.txt, incremnt by 1 and write it back
+    # with open('./api/arschfragen.txt', 'r') as file:
+    #     arschfragen = int(file.read())
+    #     arschfragen += 1
+    #     with open('./api/arschfragen.txt', 'w') as file:
+    #         file.write(str(arschfragen))
 
     return jsonify({'sylables': sylables})
 
