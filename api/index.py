@@ -1,11 +1,13 @@
 from flask import Flask, request, Response, jsonify
 import pyphen
 import json
+from flask_cors import cross_origin
 
 app = Flask(__name__)
 app.config['JSON_AS_ASCII'] = False
 
 @app.route('/hyphenation', methods=['POST'])
+@cross_origin()
 def hyphenation():
     data = request.get_json()
     print(data)
@@ -20,8 +22,9 @@ def hyphenation():
     data = {'sylables': sylables}
     json_string = json.dumps(data,ensure_ascii = False)
     #creating a Response object to set the content type and the encoding
-    response = Response(json_string,content_type="application/json; charset=utf-8" )
-    return response
+    # response = Response(json_string,content_type="application/json; charset=utf-8" )
+    # return response
+    return jsonify({'sylables': sylables})
 
 @app.route('/arsch', methods=['POST'])
 def arsch():
