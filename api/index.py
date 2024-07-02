@@ -6,7 +6,7 @@ from flask_cors import cross_origin
 app = Flask(__name__)
 app.config['JSON_AS_ASCII'] = False
 
-@app.route('/hyphenation', methods=['POST'])
+@app.route('/v1/hyphenation', methods=['POST'])
 @cross_origin()
 def hyphenation():
     data = request.get_json()
@@ -18,12 +18,7 @@ def hyphenation():
     for word in words:
         sylable = dic.inserted(word)
         sylables.append(sylable)
-
-    data = {'sylables': sylables}
-    json_string = json.dumps(data,ensure_ascii = False)
-    #creating a Response object to set the content type and the encoding
-    # response = Response(json_string,content_type="application/json; charset=utf-8" )
-    # return response
+        
     return jsonify({'sylables': sylables})
 
 @app.route('/arsch', methods=['POST'])
