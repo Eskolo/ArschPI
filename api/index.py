@@ -1,6 +1,10 @@
 from flask import Flask, request, Response, jsonify
 import pyphen
+import os
+import sys
 from flask_cors import cross_origin
+
+sys.path.append(os.path.dirname(__file__))
 from verarscher import verarschen
 
 app = Flask(__name__)
