@@ -21,11 +21,10 @@ def hyphenation():
     json_string = json.dumps(data,ensure_ascii = False)
     #creating a Response object to set the content type and the encoding
     response = Response(json_string,content_type="application/json; charset=utf-8" )
-    # add corse header
     response.headers.add("Access-Control-Allow-Origin", "*")
     return response
 
-@app.route('/get-hyphenation', methods=['GET'])
+@app.route('/hyphenation', methods=['GET'])
 def hyphenation():
     text = request.args.get('text', '')
     print(text)
