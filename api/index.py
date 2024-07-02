@@ -1,13 +1,11 @@
 from flask import Flask, request, Response, jsonify
 import pyphen
 import json
-from flask_cors import cross_origin
 
 app = Flask(__name__)
 app.config['JSON_AS_ASCII'] = False
 
 @app.route('/hyphenation', methods=['POST'])
-@cross_origin()
 def hyphenation():
     data = request.get_json()
     print(data)
