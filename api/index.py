@@ -21,6 +21,7 @@ def hyphenation():
     json_string = json.dumps(data,ensure_ascii = False)
     #creating a Response object to set the content type and the encoding
     response = Response(json_string,content_type="application/json; charset=utf-8" )
+    response.headers.add('Access-Control-Allow-Origin', '*')
     return response
 
 @app.route('/arsch', methods=['POST'])
