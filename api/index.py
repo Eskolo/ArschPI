@@ -1,11 +1,9 @@
 from flask import Flask, request, Response, jsonify
-from flask_cors import CORS
 import pyphen
 import json
 
 app = Flask(__name__)
 app.config['JSON_AS_ASCII'] = False
-CORS(app)  # This will enable CORS for all routes
 
 @app.route('/hyphenation', methods=['POST'])
 def hyphenation():
