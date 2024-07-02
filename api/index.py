@@ -6,6 +6,7 @@ from flask_cors import cross_origin
 app = Flask(__name__)
 app.config['JSON_AS_ASCII'] = False
 
+arsch = {}
 
 @app.route('/v1/hyphenation', methods=['POST'])
 @cross_origin()
@@ -20,23 +21,19 @@ def hyphenation():
         sylable = dic.inserted(word)
         sylables.append(sylable)
 
-    # read the int from arschfragen.txt, incremnt by 1 and write it back
-    with open('arschfragen.txt', 'r') as file:
-        arschfragen = int(file.read())
-        arschfragen += 1
-        with open('arschfragen.txt', 'w') as file:
-            file.write(str(arschfragen))
+    # check if cache is initialized
+    if 'arsch' not in arsch:
+        arsch['arsch'] = 0
+
+    arsch['arsch'] = arsch['arsch'] + 1
 
     return jsonify({'sylables': sylables})
 
 
 @app.route('/arsch', methods=['GET'])
 def arsch():
-    # read the int from arschfragen.txt
-    with open('arschfragen.txt', 'r') as file:
-        # read all text from arschfragen.txt
-        arschfragen = file.read()
-        return arschfragen + " mal arschgefragt"
+    return str(arsch['arsch']) + " mal arschgefragt"
+        
 
 
 if __name__ == '__main__':
