@@ -29,6 +29,9 @@ def verarschen(data, arschfaktor, respectFirstArsch=True):
             "maschbau": "arschbau",
             "ag" : "arschg",
             "gmbh": "gmbharsch",
+            "fsmb": "fsmarsch",
+            "kathy": "karsch",
+            "luca" : "arsch",
         }
 
         for sylable in data["sylables"]:
