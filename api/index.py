@@ -6,7 +6,7 @@ app = Flask(__name__)
 app.config['JSON_AS_ASCII'] = False
 
 
-def verarschen(data, arschfaktor):
+def verarschen(data, arschfaktor, respectFirstArsch=True):
     if "sylables" in data and isinstance(data["sylables"], list):
         # create word array
         words = []
@@ -19,8 +19,11 @@ def verarschen(data, arschfaktor):
             "hauptquartier": "hauptquarschtier",
             "an": "an",
             "am": "am",
+            "als": "als",
             "maschinenbau": "arschbau",
             "maschbau": "arschbau",
+            "ag" : "arschg",
+            "gmbh": "gmbharsch",
         }
 
         for sylable in data["sylables"]:
@@ -70,13 +73,14 @@ def verarschen(data, arschfaktor):
                             sylables[0] = first_syl[:index] + \
                                 "arsch" + first_syl[index + 2:]
 
-            if "arsch" not in sylables[0].lower():
-                for j in range(1, len(sylables)):
-                    if len(sylables) <= arschfaktor and "a" in sylables[j]:
-                        sylables[j] = sylables[j].replace("a", "arsch")
-                        break
-                    else:
-                        sylables[j] = sylables[j].replace("a", "arsch")
+            for j in range(1, len(sylables)):
+                if respectFirstArsch and "arsch" in sylables[0].lower():
+                    break
+                if len(sylables) <= arschfaktor and "a" in sylables[j]:
+                    sylables[j] = sylables[j].replace("a", "arsch")
+                    break
+                else:
+                    sylables[j] = sylables[j].replace("a", "arsch")
 
             word = "".join(sylables).lower()
 
@@ -125,6 +129,7 @@ def verarscher():
     print(data)
     text = data.get('text', '')
     arschfaktor = data.get('arschfaktor', 6)
+    respectFirstArsch = data.get('respectFirstArsch', True)
     dic = pyphen.Pyphen(lang='de_DE')
     words = text.split()
     sylables = []
@@ -132,7 +137,7 @@ def verarscher():
         sylable = dic.inserted(word)
         sylables.append(sylable)
 
-    arsch = verarschen(data={'sylables': sylables}, arschfaktor=arschfaktor)
+    arsch = verarschen(data={'sylables': sylables}, arschfaktor=arschfaktor, respectFirstArsch=respectFirstArsch)
     return Response(arsch, mimetype='application/text; charset=utf-8')
 
 @app.route('/v1/massenverarschung', methods=['POST'])
@@ -141,6 +146,7 @@ def mass_verarscher():
     data = request.get_json()
     texts = data.get('texts', [])
     arschfaktor = data.get('arschfaktor', 6)
+    respectFirstArsch = data.get('respectFirstArsch', True)
     results = []
     for text in texts:
         dic = pyphen.Pyphen(lang='de_DE')
@@ -150,7 +156,7 @@ def mass_verarscher():
             sylable = dic.inserted(word)
             sylables.append(sylable)
 
-        arsch = verarschen(data={'sylables': sylables}, arschfaktor=arschfaktor)
+        arsch = verarschen(data={'sylables': sylables}, arschfaktor=arschfaktor, respectFirstArsch=respectFirstArsch)
         results.append(arsch)
     # return the results as a json object
     return jsonify({'results': results})
