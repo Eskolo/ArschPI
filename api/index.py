@@ -6,6 +6,7 @@ from werkzeug.utils import secure_filename
 import os
 from flask import send_file
 import fitz  # PyMuPDF
+import tempfile
 
 app = Flask(__name__)
 app.config['JSON_AS_ASCII'] = False
@@ -114,7 +115,7 @@ def verarschen(data, arschfaktor, respectFirstArsch=True):
             words.append(word)
 
         output = " ".join(words)
-        print(output)
+        #print(output)
         return output
 
 
@@ -180,18 +181,49 @@ def arsch():
 @app.route('/v1/arschPDF', methods=['POST'])
 @cross_origin()
 def upload_pdf():
-    if 'file' not in request.files:
-        return jsonify({'error': 'No file part'}), 400
-    file = request.files['file']
-    if file.filename == '':
-        return jsonify({'error': 'No selected file'}), 400
+    # Support chunked uploads
+    chunk_index = request.form.get('chunkIndex', type=int)
+    total_chunks = request.form.get('totalChunks', type=int)
+    orig_filename = request.form.get('filename')
+    file = request.files.get('file')
 
-    filename = secure_filename(file.filename)
-    temp_path = os.path.join('/tmp', filename)
-    file.save(temp_path)
+    if orig_filename is None or file is None or chunk_index is None or total_chunks is None:
+        return jsonify({'error': 'Missing chunk upload parameters'}), 400
 
+    # Use a temp dir for this upload session
+    upload_id = secure_filename(orig_filename)
+    temp_dir = os.path.join('/tmp', f'arsch_upload_{upload_id}')
+    os.makedirs(temp_dir, exist_ok=True)
+    chunk_path = os.path.join(temp_dir, f'chunk_{chunk_index:05d}')
+    file.save(chunk_path)
+
+    # If not the last chunk, just acknowledge receipt
+    if chunk_index < total_chunks - 1:
+        return jsonify({'status': 'chunk received', 'chunkIndex': chunk_index})
+
+    # Last chunk received: combine all chunks
+    combined_path = os.path.join('/tmp', f'combined_{upload_id}')
+    with open(combined_path, 'wb') as outfile:
+        for idx in range(total_chunks):
+            part_path = os.path.join(temp_dir, f'chunk_{idx:05d}')
+            with open(part_path, 'rb') as infile:
+                outfile.write(infile.read())
+
+    print("All chunks combined.")
+
+    # Clean up chunk files
+    for idx in range(total_chunks):
+        part_path = os.path.join(temp_dir, f'chunk_{idx:05d}')
+        if os.path.exists(part_path):
+            os.remove(part_path)
     try:
-        doc = fitz.open(temp_path)
+        os.rmdir(temp_dir)
+    except Exception:
+        pass
+
+    # Now process the combined PDF as before
+    try:
+        doc = fitz.open(combined_path)
         print("pdf opened.")
 
         # 1) Alle Text-Spans einsammeln
@@ -272,17 +304,12 @@ def upload_pdf():
         
     except Exception as e:
         print(f"Error processing PDF: {e}")
-        os.remove(temp_path)
-        print("Temp file deleted.")
-
         return jsonify({'error': str(e)}), 500
     finally:
-        # Clean up the temporary file
-        if os.path.exists(temp_path):
-            os.remove(temp_path)
-            print("Temp file deleted.")
-
-        
+        # Clean up the combined file
+        if os.path.exists(combined_path):
+            os.remove(combined_path)
+        print("Temp file deleted.")
 
 
 if __name__ == '__main__':
