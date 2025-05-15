@@ -1,6 +1,11 @@
+import io
 from flask import Flask, request, Response, jsonify
 import pyphen
 from flask_cors import cross_origin
+from werkzeug.utils import secure_filename
+import os
+from flask import send_file
+import fitz  # PyMuPDF
 
 app = Flask(__name__)
 app.config['JSON_AS_ASCII'] = False
@@ -30,6 +35,9 @@ def verarschen(data, arschfaktor, respectFirstArsch=True):
             # split word into syllables "Hal-lo" -> ["Hal", "lo"]
             sylables = sylable.split("-")
             word = "".join(sylables)
+
+            if not word:
+                continue  # Skip empty words
 
             # if the word contains already arsch, skip
             if "arsch" in word.lower():
@@ -161,10 +169,116 @@ def mass_verarscher():
     # return the results as a json object
     return jsonify({'results': results})
 
-
 @app.route('/arsch', methods=['GET'])
 def arsch():
     return "Arsch!"
+
+@app.route('/v1/arschPDF', methods=['POST'])
+@cross_origin()
+def upload_pdf():
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file part'}), 400
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'error': 'No selected file'}), 400
+
+    filename = secure_filename(file.filename)
+    temp_path = os.path.join('/tmp', filename)
+    file.save(temp_path)
+
+    try:
+        doc = fitz.open(temp_path)
+        print("pdf opened.")
+
+        # 1) Alle Text-Spans einsammeln
+        spans = []
+        for page_num, page in enumerate(doc):
+            blocks = page.get_text("dict")["blocks"]
+            for b in blocks:
+                if "lines" not in b:
+                    continue  # Skip non-text blocks
+                for line in b["lines"]:
+                    for span in line["spans"]:
+                        text = span["text"].strip()
+                        if not text:
+                            continue
+                        spans.append({
+                            "page": page_num,
+                            "bbox": span["bbox"],
+                            "size": span["size"],
+                            "font": span["font"],
+                            "orig": text
+                        })
+
+
+        print("Text-Spans done.")
+
+        # 2) Batch-Übersetzung anfragen
+        texts = [s["orig"] for s in spans]
+        #resp = requests.post(API_URL, json={"texts": texts, "target": TARGET_LANG})
+        
+        # verarsch all texts using verarschen function 
+        results = []
+
+        for text in texts:
+            dic = pyphen.Pyphen(lang='de_DE')
+            words = text.split()
+            sylables = []
+            for word in words:
+                sylable = dic.inserted(word)
+                sylables.append(sylable)
+
+            arsch = verarschen(data={'sylables': sylables}, arschfaktor=6, respectFirstArsch=True)
+            results.append(arsch)
+
+        print("Verarschung done.")
+
+        # 3) Redaktionen setzen
+        for span in spans:
+            page = doc[span["page"]]
+            rect = fitz.Rect(span["bbox"])
+            page.add_redact_annot(rect, fill=(1,1,1))
+        
+        for page in doc:
+            page.apply_redactions()
+
+        print("Redaktionen done.")
+
+        # 4) Übersetzte Texte einfügen
+        for idx, span in enumerate(spans):
+            page = doc[span["page"]]
+            x0, y0, x1, y1 = span["bbox"]
+            insert_point = fitz.Point(x0, y1)
+            page.insert_text(
+                insert_point,
+                results[idx],
+                fontsize=span["size"]
+                #fontname=span["font"]
+            )
+
+        print("Text einfügen done.")
+
+        # 5) PDF-Bytes erzeugen und zurückliefern
+        out = io.BytesIO()
+        doc.save(out)
+        out.seek(0)
+
+        print("byte write done.")
+        return Response(out.read(), mimetype='application/pdf')
+        
+    except Exception as e:
+        print(f"Error processing PDF: {e}")
+        os.remove(temp_path)
+        print("Temp file deleted.")
+
+        return jsonify({'error': str(e)}), 500
+    finally:
+        # Clean up the temporary file
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+            print("Temp file deleted.")
+
+        
 
 
 if __name__ == '__main__':
