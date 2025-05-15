@@ -135,6 +135,26 @@ def verarscher():
     arsch = verarschen(data={'sylables': sylables}, arschfaktor=arschfaktor)
     return Response(arsch, mimetype='application/text; charset=utf-8')
 
+@app.route('/v1/massenverarschung', methods=['POST'])
+@cross_origin()
+def mass_verarscher():
+    data = request.get_json()
+    texts = data.get('texts', [])
+    arschfaktor = data.get('arschfaktor', 6)
+    results = []
+    for text in texts:
+        dic = pyphen.Pyphen(lang='de_DE')
+        words = text.split()
+        sylables = []
+        for word in words:
+            sylable = dic.inserted(word)
+            sylables.append(sylable)
+
+        arsch = verarschen(data={'sylables': sylables}, arschfaktor=arschfaktor)
+        results.append(arsch)
+    # return the results as a json object
+    return jsonify({'results': results})
+
 
 @app.route('/arsch', methods=['GET'])
 def arsch():
