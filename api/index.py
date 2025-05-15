@@ -133,7 +133,7 @@ def verarscher():
         sylables.append(sylable)
 
     arsch = verarschen(data={'sylables': sylables}, arschfaktor=arschfaktor)
-    return jsonify(arsch)
+    return Response(arsch, mimetype='application/json; charset=utf-8')
 
 
 @app.route('/arsch', methods=['GET'])
