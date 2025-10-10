@@ -32,7 +32,7 @@ def verarschen(data, arschfaktor, respectFirstArsch=True):
             "ag" : "arschg",
             "gmbh": "gmbharsch",
             "fsmb": "fsmarsch",
-            "kathy": "karsch",
+            "kathy": "carsch 2",
             "luca" : "arsch",
         }
 
